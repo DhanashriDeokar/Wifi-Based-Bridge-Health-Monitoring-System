@@ -1,0 +1,273 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fswiss\fprq2\fcharset0 Tahoma;}{\f1\fnil\fcharset0 Calibri;}}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\widctlpar\sa200\sl360\slmult1\qj\f0\fs24\lang16393 #include "Includes.h"\par
+volatile unsigned char RxData[30];\par
+volatile unsigned char tx_buf[20];\par
+volatile unsigned int dly_cnt1,dly_cnt2,sample,i,j;\par
+volatile unsigned int RxIdx,Length;\par
+volatile int temp_val,display_flag,idx1,idx2;\par
+static bit Rx_flag,DI1_FLAG,DI2_FLAG,DI3_FLAG;\par
+char raw_dis_char[20];\par
+\par
+#define input  1\par
+#define output 0\par
+#define uart_rx RC7\par
+#define rx_dir TRISC7\par
+#define uart_tx RC6\par
+#define tx_dir TRISC6\par
+#define buzzer      RD3 //\par
+#define buzzer_dir  TRISD3\par
+\par
+#define DI1 \tab   RD0//A0               //Vaibration\par
+#define DI1_dir   TRISD0//A0\par
+\par
+#define DI2 \tab   RD1//A1               //Flood\par
+#define DI2_dir   TRISD1//A1\par
+\par
+#define DI3 \tab   RC1//A2               //Tilt\par
+#define DI3_dir   TRISC1//A2\par
+\par
+#define RED_LED     RC4 \par
+#define RED_LED_dir TRISC4\par
+\par
+#define GRN_LED     RC5  \par
+#define GRN_LED_dir TRISC5\par
+\par
+#define MotorA       RD4\par
+#define MotorA_dir   TRISD4\par
+\par
+#define MotorB         RD5\par
+#define MotorB_dir     TRISD5\par
+#define MotorC       RC3\par
+#define MotorC_dir   TRISC3\par
+\par
+#define MotorD         RC2\par
+#define MotorD_dir     TRISC2\par
+\par
+#define ON  0\par
+#define OFF 1\par
+\par
+extern void Send_DI1_SMS(void);\par
+extern void Send_DI2_SMS(void);\par
+extern void Send_DI3_SMS(void);\par
+extern void Send_DI4_SMS(void);\par
+\par
+unsigned char LIMIT_SW;\par
+unsigned int DBNC;\par
+\par
+\par
+void main()\par
+\{ \par
+\tab TRISA=0XFF;\par
+\tab tx_dir = output;\par
+\tab rx_dir = input;\par
+\par
+        DI1_dir=input; DI2_dir=input;DI3_dir=input;\par
+        RED_LED_dir=output; GRN_LED_dir=output;\par
+\par
+        MotorA_dir =output; MotorB_dir=output;\par
+        MotorC_dir =output; MotorD_dir=output;\par
+        RED_LED=OFF;\par
+        GRN_LED=ON;\par
+\par
+        MotorA=OFF;MotorB=OFF;MotorC=OFF;MotorD=OFF;\par
+\tab\par
+\tab delay(100);\par
+\tab DispInit();\par
+\tab delay(10);\par
+\tab DispClear();\par
+\tab delay(10);\tab\tab\tab\par
+\tab lcd_write(33,"  Welcome to    \\n  GPN  Nasik ");\par
+\tab delay(10);\par
+\tab LCD_CursorOff();\par
+\tab sec_delay(2);\par
+\par
+\tab DispClear();\par
+\tab delay(10);\tab\tab\tab\par
+\tab lcd_write(33,"Bridge Health   \\nMonitoring SYS  ");\par
+\tab delay(10);\tab\tab\tab\par
+\tab LCD_CursorOff();\par
+\tab uart();\par
+        sec_delay(2);\par
+\par
+        DispClear();\par
+\tab delay(10);\tab\tab\tab\par
+\tab lcd_write(33,"Welcome to  \\nNashik Bridge   ");\par
+\tab sec_delay(5);\par
+\tab\par
+\tab Rx_flag=0\par
+       MotorA=OFF;MotorB=ON;MotorC=OFF;MotorD=ON;\par
+        sec_delay(1);\par
+       MotorA=OFF;MotorB=OFF;MotorC=OFF;MotorD=OFF;\par
+\tab while(1)\par
+\tab\par
+\{\par
+\par
+             if(DI1==0 && DI2==0 && DI3==1)\par
+             \{\par
+\par
+              DispClear();\par
+                delay(10);\par
+                lcd_write(33,"System is   \\nHelaty NO Fault ");\par
+                sec_delay(1);\par
+                MotorA=OFF;MotorB=ON;MotorC=OFF;MotorD=ON;\par
+                sec_delay(1);\par
+                MotorA=OFF;MotorB=OFF;MotorC=OFF;MotorD=OFF;\par
+\par
+             \}\par
+            if(DI1==0)\par
+            \{\par
+                for(DBNC=0; DBNC<1000; DBNC++);\par
+\par
+                if(DI1==0)\par
+                \{\par
+                    DI1_FLAG=1;\par
+                \}\par
+            \}\par
+\par
+            if(DI2==0)\par
+            \{\par
+                for(DBNC=0; DBNC<1000; DBNC++);\par
+\par
+                if(DI2==0)\par
+                \{\par
+                    DI2_FLAG=1;\par
+                \}\par
+            \}\par
+             if(DI3==1)\par
+            \{\par
+                for(DBNC=0; DBNC<1000; DBNC++);\par
+\par
+                if(DI3==1)\par
+                \{\par
+                    DI3_FLAG=1;\par
+                \}\par
+            \}\par
+            else\par
+\par
+\par
+\par
+        \{\par
+\par
+ RED_LED=OFF;\par
+                  GRN_LED=ON;\par
+                  buzzer=OFF;\par
+                 MotorA=OFF;MotorB=OFF;MotorC=OFF;MotorD=OFF;\par
+                DispClear();\par
+                delay(10);\par
+                lcd_write(33,"Welcome to  \\nNashik Bridge   ");\par
+                sec_delay(1);\par
+                MotorA=OFF;MotorB=ON;MotorC=OFF;MotorD=ON;\par
+                sec_delay(1);\par
+                MotorA=OFF;MotorB=OFF;MotorC=OFF;MotorD=OFF;\par
+            \}\par
+\par
+\par
+            if(DI1_FLAG==1 || DI2_FLAG==1||DI3_FLAG==1)\par
+            \{\par
+\par
+                if(DI1_FLAG==1)\par
+                \{\par
+                    RED_LED=ON; GRN_LED=OFF;\par
+                    buzzer=ON;\par
+\par
+                    Send_Mobile_No();\par
+                    Send_DI1_SMS();\par
+                    DispClear(); delay(10);\par
+                    lcd_write(33,"Earth Quake Det.\\nMessgae Send... ");\par
+                    sec_delay(1);\par
+                    DispClear(); delay(10);\par
+                    lcd_write(33,"Danger Zone \\n Please Stop !!!");\par
+                    sec_delay(5);\par
+                     buzzer=OFF;\par
+                     MotorA=ON;MotorB=OFF;\par
+                     sec_delay(1);\par
+                     MotorA=OFF;MotorB=OFF;\par
+                     sec_delay(10);\par
+                     MotorC=ON;MotorD=OFF;\par
+                     sec_delay(1);\par
+                     MotorC=OFF;MotorD=OFF;\par
+                \}\par
+\par
+                if(DI2_FLAG==1)\par
+                \{\par
+\par
+                    RED_LED=ON; GRN_LED=OFF;\par
+                    buzzer=ON;\par
+                    Send_DI2_SMS();\par
+                    DispClear(); delay(10);\par
+                    lcd_write(33,"Flood Detec \\n Please Wait... ");\par
+                    sec_delay(1);\par
+\par
+                    DispClear(); delay(10);\par
+                    lcd_write(33,"Danger Zone \\n Please Stop !!!");\par
+                    sec_delay(5);\par
+                    buzzer=OFF;\par
+                    MotorA=ON;MotorB=OFF;\par
+                     sec_delay(1);\par
+                     MotorA=OFF;MotorB=OFF;\par
+                     sec_delay(10);\par
+                     MotorC=ON;MotorD=OFF;\par
+                     sec_delay(1);\par
+                     MotorC=OFF;MotorD=OFF;\par
+\par
+                \}\par
+                if(DI3_FLAG==1)\par
+                \{\par
+\par
+                    RED_LED=ON; GRN_LED=OFF;\par
+                    buzzer=ON;\par
+                    Send_DI3_SMS();\par
+                    DispClear(); delay(10);\par
+                    lcd_write(33,"Tilt Detect \\n Please Wait... ");\par
+                    sec_delay(1);\par
+                    DispClear(); delay(10);\par
+                    lcd_write(33,"Danger Zone \\n Please Stop !!!");\par
+                    sec_delay(5);\par
+                    buzzer=OFF;\par
+                    MotorA=ON;MotorB=OFF;\par
+                     sec_delay(1);\par
+                     MotorA=OFF;MotorB=OFF;\par
+                     sec_delay(10);\par
+                     MotorC=ON;MotorD=OFF;\par
+                     sec_delay(1);\par
+                     MotorC=OFF;MotorD=OFF;\par
+\par
+\par
+                \}\par
+\par
+                Delay_1sec(1);//5\par
+                DI1_FLAG=0;DI2_FLAG=0;DI3_FLAG=0;\par
+            \}\par
+\par
+\tab\}\par
+\}\par
+\par
+void Send_DI1_SMS(void)\par
+\{\par
+\tab UART1Send("Earth Quake Detected\\r\\n", 22);\par
+        UART1Send("Take Required Action\\r\\n", 22);\par
+        UART1Send(cntr_z, 1);\par
+\tab Delay_1sec(1);\par
+\}\par
+//**********************************************************************\par
+void Send_DI2_SMS(void)\par
+\{\par
+\tab UART1Send("Flood is Detected !!\\r\\n", 22);\par
+        UART1Send("Take Required Action\\r\\n", 22);\par
+        UART1Send(cntr_z, 1);\par
+\tab Delay_1sec(1);\par
+\}\par
+//**********************************************************************\par
+void Send_DI3_SMS(void)\par
+\{\par
+\tab UART1Send("Tilt is Detected !!!\\r\\n", 22);\par
+        UART1Send("Take Required Action\\r\\n", 22);\par
+\par
+        UART1Send(cntr_z, 1);\par
+\tab Delay_10sec(1);\par
+\}\par
+
+\pard\sa200\sl276\slmult1\f1\fs22\lang9\par
+}
+ 
